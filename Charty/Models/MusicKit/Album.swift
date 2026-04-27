@@ -1,3 +1,4 @@
+import Foundation
 
 
 struct AlbumItem: Identifiable {
@@ -5,6 +6,7 @@ struct AlbumItem: Identifiable {
     let title: String
     let artist: String
     let playCount: Int
+    let releaseDate: Date?
     
     var award: Award? {
         if playCount >= 3000 { return .doubleDiamond }

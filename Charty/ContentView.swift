@@ -28,7 +28,8 @@ struct ContentView: View {
                                     ChartRow(
                                         rank: result.rank,
                                         title: result.item.title,
-                                        subtitle: result.item.artist,
+                                        subtitle: result.item.artist + (result.item.releaseDate != nil ?
+                                        " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
                                         stat: result.item.playCount,
                                         award: result.item.award
                                     )
@@ -36,13 +37,17 @@ struct ContentView: View {
                             } else if selectedChart == 1 {
                                 let filteredAlbums = searchResults(for: service.albums)
                                 ForEach(filteredAlbums, id: \.item.id) { result in
-                                    ChartRow(
-                                        rank: result.rank,
-                                        title: result.item.title,
-                                        subtitle: result.item.artist,
-                                        stat: result.item.playCount,
-                                        award: result.item.award
-                                    )
+                                    NavigationLink(destination: AlbumDetail(album: result.item, allSongs: service.songs)) {
+                                        ChartRow(
+                                            rank: result.rank,
+                                            title: result.item.title,
+                                            subtitle: result.item.artist + (result.item.releaseDate != nil ?
+                                            " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
+                                            stat: result.item.playCount,
+                                            award: result.item.award
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             } else {
                                 let filteredArtists = searchResults(for: service.artists)
@@ -86,7 +91,7 @@ struct ContentView: View {
         return rankedItems.filter { ranked in
             let searchTarget: String
             if let song = ranked.item as? SongItem {
-                searchTarget = "\(song.title) \(song.artist)"
+                searchTarget = "\(song.title) \(song.albumArtist)"
             } else if let album = ranked.item as? AlbumItem {
                 searchTarget = "\(album.title) \(album.artist)"
             } else if let artist = ranked.item as? ArtistItem {

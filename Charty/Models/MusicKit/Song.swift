@@ -4,11 +4,14 @@ struct SongItem: Identifiable {
     let id: String
     let title: String
     let artist: String
+    let albumArtist: String
     let artistID: String?
     let albumTitle: String
     let albumID: String?
     let playCount: Int
     let lastPlayed: Date?
+    let trackNumber: Int
+    let releaseDate: Date?
     
     var award: Award? {
         if playCount >= 500 { return .doubleDiamond }

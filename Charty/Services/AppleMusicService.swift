@@ -28,12 +28,15 @@ class AppleMusicService: ObservableObject {
                 fetchedSongs.append(SongItem(
                     id: detailed.id.rawValue,
                     title: detailed.title,
-                    artist: detailed.albums?.first?.artistName ?? detailed.artistName,
+                    artist: detailed.artistName,
+                    albumArtist: detailed.albums?.first?.artistName ?? detailed.artistName,
                     artistID: detailed.artists?.first?.id.rawValue,
                     albumTitle: detailed.albumTitle ?? "Unknown Album",
                     albumID: detailed.albums?.first?.id.rawValue,
                     playCount: detailed.playCount ?? 0,
-                    lastPlayed: detailed.lastPlayedDate
+                    lastPlayed: detailed.lastPlayedDate,
+                    trackNumber: detailed.trackNumber ?? 0,
+                    releaseDate: detailed.releaseDate
                 ))
             }
             
@@ -49,22 +52,22 @@ class AppleMusicService: ObservableObject {
     }
     
     private func aggregateAlbumCharts(from songs: [SongItem]) -> [AlbumItem] {
-        var data: [String: (title: String, artist: String, count: Int)] = [:]
+        var data: [String: (title: String, artist: String, count: Int, releaseDate: Date?)] = [:]
         for song in songs {
-            let key = song.albumID ?? "\(song.albumTitle)-\(song.artist)"
-            let current = data[key] ?? (title: song.albumTitle, artist: song.artist, count: 0)
-            data[key] = (title: current.title, artist: current.artist, count: current.count + song.playCount)
+            let key = song.albumID ?? "\(song.albumTitle)-\(song.albumArtist)"
+            let current = data[key] ?? (title: song.albumTitle, artist: song.albumArtist, count: 0, releaseDate: song.releaseDate)
+            data[key] = (title: current.title, artist: current.artist, count: current.count + song.playCount, releaseDate: current.releaseDate)
         }
         return data.map {
-            AlbumItem(id: $0.key, title: $0.value.title, artist: $0.value.artist, playCount: $0.value.count)
+            AlbumItem(id: $0.key, title: $0.value.title, artist: $0.value.artist, playCount: $0.value.count, releaseDate: $0.value.releaseDate)
         }.sorted { $0.playCount > $1.playCount }
     }
     
     private func aggregateArtistCharts(from songs: [SongItem]) -> [ArtistItem] {
         var data: [String: (name: String, count: Int)] = [:]
         for song in songs {
-            let key = song.artistID ?? song.artist
-            let current = data[key] ?? (name: song.artist, count: 0)
+            let key = song.artistID ?? song.albumArtist
+            let current = data[key] ?? (name: song.albumArtist, count: 0)
             data[key] = (name: current.name, count: current.count + song.playCount)
         }
         return data.map {
