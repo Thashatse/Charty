@@ -21,7 +21,7 @@ struct ChartRow: View {
                     .font(.system(.body, design: .monospaced))
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary)
-                    .frame(width: 35, alignment: .leading)
+                    .frame(width: 40, alignment: .leading)
                 
                 VStack(alignment: .leading) {
                                 HStack(spacing: 8) {
