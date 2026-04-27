@@ -50,7 +50,7 @@ struct ContentView: View {
                                     ChartRow(
                                         rank: result.rank,
                                         title: result.item.name,
-                                        subtitle: "Total Plays",
+                                        subtitle: "",
                                         stat: result.item.playCount,
                                         award: result.item.award
                                     )
