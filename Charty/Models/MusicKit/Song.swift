@@ -1,4 +1,5 @@
 import Foundation
+import MusicKit
 
 struct SongItem: Identifiable {
     let id: String
@@ -12,6 +13,7 @@ struct SongItem: Identifiable {
     let lastPlayed: Date?
     let trackNumber: Int
     let releaseDate: Date?
+    let artwork: Artwork?
     
     var award: Award? {
         if playCount >= 500 { return .doubleDiamond }

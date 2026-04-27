@@ -36,7 +36,8 @@ class AppleMusicService: ObservableObject {
                     playCount: detailed.playCount ?? 0,
                     lastPlayed: detailed.lastPlayedDate,
                     trackNumber: detailed.trackNumber ?? 0,
-                    releaseDate: detailed.releaseDate
+                    releaseDate: detailed.releaseDate,
+                    artwork: detailed.artwork
                 ))
             }
             
@@ -52,14 +53,18 @@ class AppleMusicService: ObservableObject {
     }
     
     private func aggregateAlbumCharts(from songs: [SongItem]) -> [AlbumItem] {
-        var data: [String: (title: String, artist: String, count: Int, releaseDate: Date?)] = [:]
+        var data: [String: (title: String, artist: String, count: Int, releaseDate: Date?, artwork: Artwork?)] = [:]
+        
         for song in songs {
             let key = song.albumID ?? "\(song.albumTitle)-\(song.albumArtist)"
-            let current = data[key] ?? (title: song.albumTitle, artist: song.albumArtist, count: 0, releaseDate: song.releaseDate)
-            data[key] = (title: current.title, artist: current.artist, count: current.count + song.playCount, releaseDate: current.releaseDate)
+            let current = data[key] ?? (title: song.albumTitle, artist: song.albumArtist, count: 0, releaseDate: song.releaseDate,
+                                        artwork: song.artwork)
+            data[key] = (title: current.title, artist: current.artist, count: current.count + song.playCount, releaseDate: current.releaseDate,
+                         artwork: current.artwork)
         }
         return data.map {
-            AlbumItem(id: $0.key, title: $0.value.title, artist: $0.value.artist, playCount: $0.value.count, releaseDate: $0.value.releaseDate)
+            AlbumItem(id: $0.key, title: $0.value.title, artist: $0.value.artist, playCount: $0.value.count, releaseDate: $0.value.releaseDate,
+                      artwork: $0.value.artwork)
         }.sorted { $0.playCount > $1.playCount }
     }
     

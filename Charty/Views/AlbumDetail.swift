@@ -1,4 +1,5 @@
 import SwiftUI
+import _MusicKit_SwiftUI
 
 struct AlbumDetail: View {
     let album: AlbumItem
@@ -15,42 +16,54 @@ struct AlbumDetail: View {
             // New Header Section
             Section {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(album.title)
-                        .font(.title.bold())
-                    
-                    HStack {
-                        Text(album.artist)
-                        
-                        if let releaseDate = album.releaseDate {
-                            Text("•")
-                            // This will display the full date (e.g., "January 1, 2024")
-                            Text(releaseDate.formatted(date: .long, time: .omitted))
+                    HStack(alignment: .top, spacing: 16) {
+                        if let artwork = album.artwork {
+                            ArtworkImage(artwork, width: 100, height: 100)
+                                .cornerRadius(8)
+                                .shadow(radius: 4)
+                        } else {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 100, height: 100)
+                                .overlay(Image(systemName: "music.note").foregroundStyle(.secondary))
                         }
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    
-                    Text("\(album.playCount) total plays")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    if let award = album.award {
-                        HStack {
-                            Text("Certified ")
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(album.title)
+                                .font(.title3.bold())
+                                .lineLimit(2)
+                            
+                            Text(album.artist)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            if let releaseDate = album.releaseDate {
+                                Text(String(Calendar.current.component(.year, from: releaseDate)))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Text("\(album.playCount) total plays")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .padding(.top, 2)
                             
-                            Text(award.displayName)
-                                .font(.caption.bold())
-                                .textCase(.uppercase)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(award.color.opacity(0.2))
-                                .foregroundStyle(award.color)
-                                .cornerRadius(4)
+                            if let award = album.award {
+                                HStack {
+                                    Text(award.displayName)
+                                        .font(.caption.bold())
+                                        .textCase(.uppercase)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(award.color.opacity(0.2))
+                                        .foregroundStyle(award.color)
+                                        .cornerRadius(4)
+                                }
+                                .padding(.top, 4)
+                            }
                         }
-                        .padding(.top, 4)
                     }
+                    .padding(.vertical, 8)
                 }
                 .padding(.vertical, 8)
             }
@@ -62,7 +75,8 @@ struct AlbumDetail: View {
                         title: song.title,
                         subtitle: song.artist,
                         stat: song.playCount,
-                        award: song.award
+                        award: song.award,
+                        artwork: nil
                     )
                 }
             }

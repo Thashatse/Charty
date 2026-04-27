@@ -29,9 +29,10 @@ struct ContentView: View {
                                         rank: result.rank,
                                         title: result.item.title,
                                         subtitle: result.item.artist + (result.item.releaseDate != nil ?
-                                        " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
+                                                                        " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
                                         stat: result.item.playCount,
-                                        award: result.item.award
+                                        award: result.item.award,
+                                        artwork: result.item.artwork
                                     )
                                 }
                             } else if selectedChart == 1 {
@@ -42,9 +43,10 @@ struct ContentView: View {
                                             rank: result.rank,
                                             title: result.item.title,
                                             subtitle: result.item.artist + (result.item.releaseDate != nil ?
-                                            " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
+                                                                            " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
                                             stat: result.item.playCount,
-                                            award: result.item.award
+                                            award: result.item.award,
+                                            artwork: result.item.artwork
                                         )
                                     }
                                     .buttonStyle(.plain)
@@ -57,7 +59,8 @@ struct ContentView: View {
                                         title: result.item.name,
                                         subtitle: "",
                                         stat: result.item.playCount,
-                                        award: result.item.award
+                                        award: result.item.award,
+                                        artwork: nil
                                     )
                                 }
                             }
@@ -91,11 +94,20 @@ struct ContentView: View {
         return rankedItems.filter { ranked in
             let searchTarget: String
             if let song = ranked.item as? SongItem {
-                searchTarget = "\(song.title) \(song.albumArtist)"
+                searchTarget = "\(song.title) \(song.artist) \(song.albumTitle)"
+                
             } else if let album = ranked.item as? AlbumItem {
-                searchTarget = "\(album.title) \(album.artist)"
+                // Match album title, its artist, OR any song title inside this album
+                let songsInAlbum = service.songs.filter { $0.albumTitle == album.title }
+                let songTitles = songsInAlbum.map { $0.title }.joined(separator: " ")
+                searchTarget = "\(album.title) \(album.artist) \(songTitles)"
+                
             } else if let artist = ranked.item as? ArtistItem {
-                searchTarget = artist.name
+                // Match artist name OR any song title by this artist
+                let songsByArtist = service.songs.filter { $0.artist == artist.name }
+                let songTitles = songsByArtist.map { $0.title }.joined(separator: " ")
+                searchTarget = "\(artist.name) \(songTitles)"
+                
             } else {
                 searchTarget = ""
             }
