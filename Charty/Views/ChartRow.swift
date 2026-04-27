@@ -4,7 +4,8 @@ struct ChartRow: View {
     let rank: Int
     let title: String
     let subtitle: String
-    let stat: Int // Changed from String to Int
+    let stat: Int
+    let award: Award?
 
     // Custom formatter to use a space as a separator
     private var formattedStat: String {
@@ -15,30 +16,43 @@ struct ChartRow: View {
     }
 
     var body: some View {
-        HStack {
-            Text("\(rank)")
-                .font(.system(.body, design: .monospaced))
-                .fontWeight(.bold)
-                .foregroundStyle(.secondary)
-                .frame(width: 35, alignment: .leading)
-            
-            VStack(alignment: .leading) {
-                Text(title)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                Text(subtitle)
-                    .font(.caption)
+            HStack {
+                Text("\(rank)")
+                    .font(.system(.body, design: .monospaced))
+                    .fontWeight(.bold)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .frame(width: 35, alignment: .leading)
+                
+                VStack(alignment: .leading) {
+                                HStack(spacing: 8) {
+                                    Text(title)
+                                        .fontWeight(.medium)
+                                        .lineLimit(1)
+                                    
+                                    if let award = award {
+                                        Text(award.rawValue) // Display "G", "P", or "d"
+                                            .font(.system(size: 12, weight: .black, design: .rounded))
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(award.color.opacity(0.2))
+                                            .foregroundStyle(award.color)
+                                            .cornerRadius(4)
+                                    }
+                                }
+                                
+                                Text(subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                
+                Spacer()
+                
+                Text(formattedStat)
+                    .font(.subheadline)
+                    .foregroundStyle(.blue)
+                    .fontWeight(.semibold)
             }
-            
-            Spacer()
-            
-            Text(formattedStat) // Uses the space-separated string
-                .font(.subheadline)
-                .foregroundStyle(.blue)
-                .fontWeight(.semibold)
+            .padding(.vertical, 2)
         }
-        .padding(.vertical, 2)
-    }
 }

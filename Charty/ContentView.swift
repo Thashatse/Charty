@@ -27,11 +27,11 @@ struct ContentView: View {
                                 }
                             } else if selectedChart == 1 {
                                 ForEach(Array(service.albums.prefix(100).enumerated()), id: \.element.id) { index, album in
-                                    ChartRow(rank: index + 1, title: album.title, subtitle: album.artist, stat: album.playCount)
+                                    ChartRow(rank: index + 1, title: album.title, subtitle: album.artist, stat: album.playCount, award: album.award)
                                 }
                             } else {
                                 ForEach(Array(service.artists.prefix(100).enumerated()), id: \.element.id) { index, artist in
-                                    ChartRow(rank: index + 1, title: artist.name, subtitle: "Total Plays", stat: artist.playCount)
+                                    ChartRow(rank: index + 1, title: artist.name, subtitle: "Total Plays", stat: artist.playCount, award: artist.award)
                                 }
                             }
                         }
