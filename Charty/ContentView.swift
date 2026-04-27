@@ -23,7 +23,7 @@ struct ContentView: View {
                         List {
                             if selectedChart == 0 {
                                 ForEach(Array(service.songs.prefix(500).enumerated()), id: \.element.id) { index, song in
-                                    ChartRow(rank: index + 1, title: song.title, subtitle: song.artist, stat: song.playCount)
+                                    ChartRow(rank: index + 1, title: song.title, subtitle: song.artist, stat: song.playCount, award: song.award)
                                 }
                             } else if selectedChart == 1 {
                                 ForEach(Array(service.albums.prefix(100).enumerated()), id: \.element.id) { index, album in
