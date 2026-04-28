@@ -25,35 +25,7 @@ struct AlbumDetail: View {
                             .overlay(Image(systemName: "music.note").foregroundStyle(.secondary))
                     }
                     
-                    VStack(spacing: 4) {
-                        
-                        if let award = album.award {
-                            Text(award.displayName)
-                                .font(.caption.bold())
-                                .textCase(.uppercase)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(award.color.opacity(0.2))
-                                .foregroundStyle(award.color)
-                                .cornerRadius(4)
-                        }
-                        
-                        Text("\(album.playCount) plays")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        if let releaseDate = album.releaseDate {
-                            Text("Released: \(releaseDate, formatter: albumDateFormatter)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        if let addedDate = album.libraryAddedDate {
-                            Text("Added: \(addedDate, formatter: albumDateFormatter)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
+
                 }
                 .padding(.top, 24)
                 .padding(.bottom, 20)
@@ -61,6 +33,36 @@ struct AlbumDetail: View {
                 
                 LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
                     Section {
+                        VStack(spacing: 4) {
+                            
+                            if let award = album.award {
+                                Text(award.displayName)
+                                    .font(.caption.bold())
+                                    .textCase(.uppercase)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(award.color.opacity(0.2))
+                                    .foregroundStyle(award.color)
+                                    .cornerRadius(4)
+                            }
+                            
+                            Text("\(album.playCount) plays")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            if let releaseDate = album.releaseDate {
+                                Text("Released: \(releaseDate, formatter: albumDateFormatter)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            if let addedDate = album.libraryAddedDate {
+                                Text("Added: \(addedDate, formatter: albumDateFormatter)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
                         ForEach(albumSongs) { song in
                             ChartRow(
                                 rank: song.trackNumber,
@@ -71,7 +73,7 @@ struct AlbumDetail: View {
                                 artwork: nil
                             )
                             .padding(.horizontal)
-                            .padding(.vertical, 4)
+                            .padding(.vertical, 8)
                             Divider()
                                 .padding(.leading)
                         }
