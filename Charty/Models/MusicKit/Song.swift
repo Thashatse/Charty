@@ -1,7 +1,7 @@
 import Foundation
 import MusicKit
 
-struct SongItem: Identifiable {
+struct SongItem: Identifiable, Codable {
     let id: String
     let title: String
     let artist: String
@@ -13,6 +13,7 @@ struct SongItem: Identifiable {
     let lastPlayed: Date?
     let trackNumber: Int
     let releaseDate: Date?
+    // Artwork excluded from cache — not Codable
     let artwork: Artwork?
     
     var award: Award? {
@@ -20,6 +21,6 @@ struct SongItem: Identifiable {
         if playCount >= 250 { return .diamond }
         if playCount >= 100 { return .platinum }
         if playCount >= 40 { return .gold }
-            return nil
-        }
+        return nil
+    }
 }

@@ -4,6 +4,7 @@ struct ContentView: View {
     @StateObject private var service = AppleMusicService()
     @State private var selectedChart = 0
     @State private var searchText = ""
+    @State private var showingSyncSheet = false
     
     var body: some View {
         NavigationStack {
@@ -70,10 +71,23 @@ struct ContentView: View {
             }
             .navigationTitle("Charty")
             .searchable(text: $searchText, prompt: "Search...")
-            .task {
-                if service.songs.isEmpty {
-                    await service.loadLibrary()
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingSyncSheet = true
+                    } label: {
+                        Image(systemName: "arrow.triangle.2.circlepath.circle")
+                            .symbolEffect(.rotate, isActive: service.isSyncing)
+                            .foregroundStyle(service.isOutOfDate ? .orange : .accentColor)
+                    }
                 }
+            }
+            .sheet(isPresented: $showingSyncSheet) {
+                SyncStatusView(service: service)
+            }
+            .task {
+                await service.loadOnLaunch()
             }
         }
     }

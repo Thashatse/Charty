@@ -9,10 +9,41 @@ class AppleMusicService: ObservableObject {
     @Published var artists: [ArtistItem] = []
     @Published var isLoading = false
     @Published var isSyncing = false
+    @Published var lastSynced: Date? = nil
     
-    func loadLibrary() async {
+    private let cacheKey = "charty_cache"
+    private let lastSyncedKey = "charty_last_synced"
+    
+    init() {
+        loadFromCache()
+        lastSynced = UserDefaults.standard.object(forKey: lastSyncedKey) as? Date
+    }
+    
+    private let syncIntervalHours: Double = 6
+    private let outOfDateHours: Double = 3
+    
+    var isOutOfDate: Bool {
+        guard let last = lastSynced else { return true }
+        return Date().timeIntervalSince(last) > outOfDateHours * 3600
+    }
+    
+    func loadOnLaunch() async {
+        let hasCache = !songs.isEmpty
+        guard !hasCache else {
+            if isOutOfDate {
+                await syncLibrary()
+            }
+            return
+        }
+        
         isLoading = true
-        defer { isLoading = false }
+        await syncLibrary()
+        isLoading = false
+    }
+    
+    func syncLibrary() async {
+        isSyncing = true
+        defer { isSyncing = false }
         
         let status = await MusicAuthorization.request()
         guard status == .authorized else { return }
@@ -46,6 +77,10 @@ class AppleMusicService: ObservableObject {
             self.songs = fetchedSongs
             self.albums = aggregateAlbumCharts(from: fetchedSongs)
             self.artists = aggregateArtistCharts(from: fetchedSongs)
+            
+            saveToCache()
+            lastSynced = Date()
+            UserDefaults.standard.set(lastSynced, forKey: lastSyncedKey)
             
         } catch {
             print("Error: \(error)")
@@ -81,5 +116,22 @@ class AppleMusicService: ObservableObject {
         return data.map {
             ArtistItem(id: $0.key, name: $0.value.name, playCount: $0.value.count, searchTarget: $0.value.searchTarget)
         }.sorted { $0.playCount > $1.playCount }
+    }
+    
+    private func saveToCache() {
+        let encoder = JSONEncoder()
+        if let data = try? encoder.encode(songs) {
+            UserDefaults.standard.set(data, forKey: cacheKey)
+        }
+    }
+    
+    private func loadFromCache() {
+        guard let data = UserDefaults.standard.data(forKey: cacheKey),
+              let cached = try? JSONDecoder().decode([SongItem].self, from: data)
+        else { return }
+        
+        songs = cached
+        albums = aggregateAlbumCharts(from: cached)
+        artists = aggregateArtistCharts(from: cached)
     }
 }
