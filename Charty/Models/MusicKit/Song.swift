@@ -13,6 +13,7 @@ struct SongItem: Identifiable, Codable {
     let lastPlayed: Date?
     let trackNumber: Int
     let releaseDate: Date?
+    let libraryAddedDate: Date?
     // Artwork excluded from cache — not Codable
     let artwork: Artwork?
     

@@ -1,4 +1,4 @@
-struct ArtistItem: Identifiable {
+struct ArtistItem: Identifiable, Codable {
     let id: String
     let name: String
     let playCount: Int

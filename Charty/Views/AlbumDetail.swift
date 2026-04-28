@@ -18,13 +18,13 @@ struct AlbumDetail: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .top, spacing: 16) {
                         if let artwork = album.artwork {
-                            ArtworkImage(artwork, width: 100, height: 100)
+                            ArtworkImage(artwork, width: 140, height: 140)
                                 .cornerRadius(8)
                                 .shadow(radius: 4)
                         } else {
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color.gray.opacity(0.3))
-                                .frame(width: 100, height: 100)
+                                .frame(width: 140, height: 140)
                                 .overlay(Image(systemName: "music.note").foregroundStyle(.secondary))
                         }
                         
@@ -38,7 +38,13 @@ struct AlbumDetail: View {
                                 .foregroundColor(.secondary)
                             
                             if let releaseDate = album.releaseDate {
-                                Text(String(Calendar.current.component(.year, from: releaseDate)))
+                                Text("Released: \(releaseDate, formatter: albumDateFormatter)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            if let addedDate = album.libraryAddedDate {
+                                Text("Added: \(addedDate, formatter: albumDateFormatter)")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -82,5 +88,12 @@ struct AlbumDetail: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    var albumDateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
     }
 }

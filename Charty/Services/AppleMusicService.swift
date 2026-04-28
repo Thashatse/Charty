@@ -11,8 +11,10 @@ class AppleMusicService: ObservableObject {
     @Published var isSyncing = false
     @Published var lastSynced: Date? = nil
     
-    private let cacheKey = "charty_cache"
     private let lastSyncedKey = "charty_last_synced"
+    private let songcacheKey = "charty_song_cache"
+    private let albumCacheKey = "charty_albums_cache"
+    private let artistCacheKey = "charty_artists_cache"
     
     init() {
         loadFromCache()
@@ -28,7 +30,7 @@ class AppleMusicService: ObservableObject {
     }
     
     func loadOnLaunch() async {
-        let hasCache = !songs.isEmpty
+        let hasCache = !songs.isEmpty && !albums.isEmpty && !artists.isEmpty
         guard !hasCache else {
             if isOutOfDate {
                 await syncLibrary()
@@ -50,88 +52,150 @@ class AppleMusicService: ObservableObject {
         
         do {
             var songRequest = MusicLibraryRequest<MusicKit.Song>()
-            songRequest.limit = 1000000
+            songRequest.limit = 1_000_000
             let songResponse = try await songRequest.response()
             
             var fetchedSongs: [SongItem] = []
+            var albumData: [String: (title: String, artist: String, count: Int, releaseDate: Date?, libraryAddedDate: Date?, artwork: Artwork?, searchTarget: String)] = [:]
+            var artistData: [String: (name: String, count: Int, searchTarget: String)] = [:]
+            var resolvedAlbumArtists: [String: String] = [:]
+            
             for song in songResponse.items {
-                let detailed = (try? await song.with(.albums, .artists)) ?? song
+                let playCount = song.playCount ?? 0
+                let albumTitle = song.albumTitle ?? "Unknown Album"
+                
+                // Only fetch album relationship once per unique album title
+                let albumArtist: String
+                if let cached = resolvedAlbumArtists[albumTitle] {
+                    albumArtist = cached
+                } else {
+                    let detailed = (try? await song.with(.albums)) ?? song
+                    albumArtist = detailed.albums?.first?.artistName ?? song.artistName
+                    resolvedAlbumArtists[albumTitle] = albumArtist
+                }
+                
+                let albumKey = "\(albumTitle)-\(albumArtist)"
+                let artistKey = albumArtist
+                
+                // Build song
                 fetchedSongs.append(SongItem(
-                    id: detailed.id.rawValue,
-                    title: detailed.title,
-                    artist: detailed.artistName,
-                    albumArtist: detailed.albums?.first?.artistName ?? detailed.artistName,
-                    artistID: detailed.artists?.first?.id.rawValue,
-                    albumTitle: detailed.albumTitle ?? "Unknown Album",
-                    albumID: detailed.albums?.first?.id.rawValue,
-                    playCount: detailed.playCount ?? 0,
-                    lastPlayed: detailed.lastPlayedDate,
-                    trackNumber: detailed.trackNumber ?? 0,
-                    releaseDate: detailed.releaseDate,
-                    artwork: detailed.artwork
+                    id: song.id.rawValue,
+                    title: song.title,
+                    artist: song.artistName,
+                    albumArtist: albumArtist,
+                    artistID: nil,
+                    albumTitle: albumTitle,
+                    albumID: nil,
+                    playCount: playCount,
+                    lastPlayed: song.lastPlayedDate,
+                    trackNumber: song.trackNumber ?? 0,
+                    releaseDate: song.releaseDate,
+                    libraryAddedDate: song.libraryAddedDate,
+                    artwork: song.artwork
                 ))
+                
+                // Accumulate album
+                let currentAlbum = albumData[albumKey] ?? (
+                    title: albumTitle,
+                    artist: albumArtist,
+                    count: 0,
+                    releaseDate: song.releaseDate,
+                    libraryAddedDate: song.libraryAddedDate,
+                    artwork: song.artwork,
+                    searchTarget: ""
+                )
+                albumData[albumKey] = (
+                    title: currentAlbum.title,
+                    artist: currentAlbum.artist,
+                    count: currentAlbum.count + playCount,
+                    releaseDate: currentAlbum.releaseDate,
+                    libraryAddedDate: currentAlbum.libraryAddedDate,
+                    artwork: currentAlbum.artwork,
+                    searchTarget: currentAlbum.searchTarget + " | " + song.title
+                )
+                
+                // Accumulate artist
+                let currentArtist = artistData[artistKey] ?? (name: albumArtist, count: 0, searchTarget: "")
+                artistData[artistKey] = (
+                    name: currentArtist.name,
+                    count: currentArtist.count + playCount,
+                    searchTarget: currentArtist.searchTarget + " | " + song.title
+                )
             }
             
-            fetchedSongs.sort { $0.playCount > $1.playCount }
+            self.songs = fetchedSongs.sorted {
+                if $0.playCount != $1.playCount {
+                    return $0.playCount > $1.playCount
+                }
+                let date0 = $0.libraryAddedDate ?? $0.releaseDate ?? .distantPast
+                let date1 = $1.libraryAddedDate ?? $1.releaseDate ?? .distantPast
+                return date0 < date1
+            }
             
-            self.songs = fetchedSongs
-            self.albums = aggregateAlbumCharts(from: fetchedSongs)
-            self.artists = aggregateArtistCharts(from: fetchedSongs)
+            self.albums = albumData.map {
+                AlbumItem(
+                    id: $0.key,
+                    title: $0.value.title,
+                    artist: $0.value.artist,
+                    playCount: $0.value.count,
+                    releaseDate: $0.value.releaseDate,
+                    libraryAddedDate: $0.value.libraryAddedDate,
+                    artwork: $0.value.artwork,
+                    searchTarget: $0.value.searchTarget
+                )
+            }.sorted {
+                if $0.playCount != $1.playCount {
+                    return $0.playCount > $1.playCount
+                }
+                let date0 = $0.libraryAddedDate ?? $0.releaseDate ?? .distantPast
+                let date1 = $1.libraryAddedDate ?? $1.releaseDate ?? .distantPast
+                return date0 < date1
+            }
+            
+            self.artists = artistData.map {
+                ArtistItem(
+                    id: $0.key,
+                    name: $0.value.name,
+                    playCount: $0.value.count,
+                    searchTarget: $0.value.searchTarget
+                )
+            }.sorted { $0.playCount > $1.playCount }
             
             saveToCache()
             lastSynced = Date()
             UserDefaults.standard.set(lastSynced, forKey: lastSyncedKey)
             
         } catch {
-            print("Error: \(error)")
+            print("Sync error: \(error)")
         }
-    }
-    
-    private func aggregateAlbumCharts(from songs: [SongItem]) -> [AlbumItem] {
-        var data: [String: (title: String, artist: String, count: Int, releaseDate: Date?, artwork: Artwork?, searchTarget: String)] = [:]
-        
-        for song in songs {
-            let key = song.albumID ?? "\(song.albumTitle)-\(song.albumArtist)"
-            let current = data[key] ?? (title: song.albumTitle, artist: song.albumArtist, count: 0, releaseDate: song.releaseDate,
-                                        artwork: song.artwork, searchTarget: "")
-            data[key] = (title: current.title, artist: current.artist, count: current.count + song.playCount, releaseDate: current.releaseDate,
-                         artwork: current.artwork, searchTarget: current.searchTarget + " | " + song.title)
-        }
-        
-        return data.map {
-            AlbumItem(id: $0.key, title: $0.value.title, artist: $0.value.artist, playCount: $0.value.count, releaseDate: $0.value.releaseDate,
-                      artwork: $0.value.artwork, searchTarget: $0.value.searchTarget)
-        }.sorted { $0.playCount > $1.playCount }
-    }
-    
-    private func aggregateArtistCharts(from songs: [SongItem]) -> [ArtistItem] {
-        var data: [String: (name: String, count: Int, searchTarget: String)] = [:]
-        
-        for song in songs {
-            let key = song.artistID ?? song.albumArtist
-            let current = data[key] ?? (name: song.albumArtist, count: 0, searchTarget: song.albumTitle)
-            data[key] = (name: current.name, count: current.count + song.playCount,
-                         searchTarget: current.searchTarget + " | " + song.title)
-        }
-        return data.map {
-            ArtistItem(id: $0.key, name: $0.value.name, playCount: $0.value.count, searchTarget: $0.value.searchTarget)
-        }.sorted { $0.playCount > $1.playCount }
     }
     
     private func saveToCache() {
         let encoder = JSONEncoder()
         if let data = try? encoder.encode(songs) {
-            UserDefaults.standard.set(data, forKey: cacheKey)
+            UserDefaults.standard.set(data, forKey: songcacheKey)
+        }
+        if let data = try? encoder.encode(albums) {
+            UserDefaults.standard.set(data, forKey: albumCacheKey)
+        }
+        if let data = try? encoder.encode(artists) {
+            UserDefaults.standard.set(data, forKey: artistCacheKey)
         }
     }
     
     private func loadFromCache() {
-        guard let data = UserDefaults.standard.data(forKey: cacheKey),
-              let cached = try? JSONDecoder().decode([SongItem].self, from: data)
-        else { return }
-        
-        songs = cached
-        albums = aggregateAlbumCharts(from: cached)
-        artists = aggregateArtistCharts(from: cached)
+        let decoder = JSONDecoder()
+        if let data = UserDefaults.standard.data(forKey: songcacheKey),
+           let cached = try? decoder.decode([SongItem].self, from: data) {
+            songs = cached
+        }
+        if let data = UserDefaults.standard.data(forKey: albumCacheKey),
+           let cached = try? decoder.decode([AlbumItem].self, from: data) {
+            albums = cached
+        }
+        if let data = UserDefaults.standard.data(forKey: artistCacheKey),
+           let cached = try? decoder.decode([ArtistItem].self, from: data) {
+            artists = cached
+        }
     }
 }

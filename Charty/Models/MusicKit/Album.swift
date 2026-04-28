@@ -1,12 +1,13 @@
 import Foundation
 import MusicKit
 
-struct AlbumItem: Identifiable {
+struct AlbumItem: Identifiable, Codable {
     let id: String
     let title: String
     let artist: String
     let playCount: Int
     let releaseDate: Date?
+    let libraryAddedDate: Date?
     let artwork: Artwork?
     let searchTarget: String
     
