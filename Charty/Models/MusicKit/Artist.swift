@@ -2,6 +2,7 @@ struct ArtistItem: Identifiable {
     let id: String
     let name: String
     let playCount: Int
+    let searchTarget: String
     
     var award: Award? {
         if playCount >= 10000 { return .doubleDiamond }

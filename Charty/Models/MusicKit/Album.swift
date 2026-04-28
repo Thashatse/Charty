@@ -8,6 +8,7 @@ struct AlbumItem: Identifiable {
     let playCount: Int
     let releaseDate: Date?
     let artwork: Artwork?
+    let searchTarget: String
     
     var award: Award? {
         if playCount >= 3000 { return .doubleDiamond }

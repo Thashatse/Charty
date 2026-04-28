@@ -95,19 +95,10 @@ struct ContentView: View {
             let searchTarget: String
             if let song = ranked.item as? SongItem {
                 searchTarget = "\(song.title) \(song.artist) \(song.albumTitle)"
-                
             } else if let album = ranked.item as? AlbumItem {
-                // Match album title, its artist, OR any song title inside this album
-                let songsInAlbum = service.songs.filter { $0.albumTitle == album.title }
-                let songTitles = songsInAlbum.map { $0.title }.joined(separator: " ")
-                searchTarget = "\(album.title) \(album.artist) \(songTitles)"
-                
+                searchTarget = "\(album.title) \(album.artist) \(album.searchTarget)"
             } else if let artist = ranked.item as? ArtistItem {
-                // Match artist name OR any song title by this artist
-                let songsByArtist = service.songs.filter { $0.artist == artist.name }
-                let songTitles = songsByArtist.map { $0.title }.joined(separator: " ")
-                searchTarget = "\(artist.name) \(songTitles)"
-                
+                searchTarget = "\(artist.name) \(artist.searchTarget)"
             } else {
                 searchTarget = ""
             }

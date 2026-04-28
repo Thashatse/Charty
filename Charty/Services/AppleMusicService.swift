@@ -53,30 +53,33 @@ class AppleMusicService: ObservableObject {
     }
     
     private func aggregateAlbumCharts(from songs: [SongItem]) -> [AlbumItem] {
-        var data: [String: (title: String, artist: String, count: Int, releaseDate: Date?, artwork: Artwork?)] = [:]
+        var data: [String: (title: String, artist: String, count: Int, releaseDate: Date?, artwork: Artwork?, searchTarget: String)] = [:]
         
         for song in songs {
             let key = song.albumID ?? "\(song.albumTitle)-\(song.albumArtist)"
             let current = data[key] ?? (title: song.albumTitle, artist: song.albumArtist, count: 0, releaseDate: song.releaseDate,
-                                        artwork: song.artwork)
+                                        artwork: song.artwork, searchTarget: "")
             data[key] = (title: current.title, artist: current.artist, count: current.count + song.playCount, releaseDate: current.releaseDate,
-                         artwork: current.artwork)
+                         artwork: current.artwork, searchTarget: current.searchTarget + " | " + song.title)
         }
+        
         return data.map {
             AlbumItem(id: $0.key, title: $0.value.title, artist: $0.value.artist, playCount: $0.value.count, releaseDate: $0.value.releaseDate,
-                      artwork: $0.value.artwork)
+                      artwork: $0.value.artwork, searchTarget: $0.value.searchTarget)
         }.sorted { $0.playCount > $1.playCount }
     }
     
     private func aggregateArtistCharts(from songs: [SongItem]) -> [ArtistItem] {
-        var data: [String: (name: String, count: Int)] = [:]
+        var data: [String: (name: String, count: Int, searchTarget: String)] = [:]
+        
         for song in songs {
             let key = song.artistID ?? song.albumArtist
-            let current = data[key] ?? (name: song.albumArtist, count: 0)
-            data[key] = (name: current.name, count: current.count + song.playCount)
+            let current = data[key] ?? (name: song.albumArtist, count: 0, searchTarget: song.albumTitle)
+            data[key] = (name: current.name, count: current.count + song.playCount,
+                         searchTarget: current.searchTarget + " | " + song.title)
         }
         return data.map {
-            ArtistItem(id: $0.key, name: $0.value.name, playCount: $0.value.count)
+            ArtistItem(id: $0.key, name: $0.value.name, playCount: $0.value.count, searchTarget: $0.value.searchTarget)
         }.sorted { $0.playCount > $1.playCount }
     }
 }
