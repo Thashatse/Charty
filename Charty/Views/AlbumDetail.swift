@@ -24,8 +24,6 @@ struct AlbumDetail: View {
                             .frame(width: 250, height: 250)
                             .overlay(Image(systemName: "music.note").foregroundStyle(.secondary))
                     }
-                    
-
                 }
                 .padding(.top, 24)
                 .padding(.bottom, 20)
@@ -34,6 +32,9 @@ struct AlbumDetail: View {
                 LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
                     Section {
                         VStack(spacing: 4) {
+                            Text(String(Calendar.current.component(.year, from: album.releaseDate!)) + " • \(album.playCount) plays")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                             
                             if let award = album.award {
                                 Text(award.displayName)
@@ -45,23 +46,8 @@ struct AlbumDetail: View {
                                     .foregroundStyle(award.color)
                                     .cornerRadius(4)
                             }
-                            
-                            Text("\(album.playCount) plays")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            
-                            if let releaseDate = album.releaseDate {
-                                Text("Released: \(releaseDate, formatter: albumDateFormatter)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            if let addedDate = album.libraryAddedDate {
-                                Text("Added: \(addedDate, formatter: albumDateFormatter)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
                         }
+                        .padding(.bottom, 20)
                         
                         ForEach(albumSongs) { song in
                             ChartRow(
@@ -74,9 +60,25 @@ struct AlbumDetail: View {
                             )
                             .padding(.horizontal)
                             .padding(.vertical, 8)
-                            Divider()
-                                .padding(.leading)
+                            
+                            Divider().padding(.leading)
                         }
+                        
+                        VStack(spacing: 12){
+                            if let releaseDate = album.releaseDate {
+                                Text("Released: \(releaseDate, formatter: albumDateFormatter)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            if let addedDate = album.libraryAddedDate {
+                                Text("Added: \(addedDate, formatter: albumDateFormatter)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.top, 20)
+                        
                     } header: {
                         VStack(spacing: 2) {
                             Text(album.title)
