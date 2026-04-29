@@ -12,10 +12,18 @@ struct AlbumItem: Identifiable, Codable {
     let searchTarget: String
     
     var award: Award? {
-        if playCount >= 3000 { return .doubleDiamond }
-        if playCount >= 1500 { return .diamond }
-        if playCount >= 1000 { return .platinum }
-        if playCount >= 400 { return .gold }
+            let streamingDate = Calendar.current.date(from: DateComponents(year: 2015, month: 1, day: 1))!
+            let isPreStreamingLaunch = releaseDate != nil && releaseDate! < streamingDate
+            
+            let doubleDiamondReq = isPreStreamingLaunch ? 1500 : 3000
+            let diamondReq = isPreStreamingLaunch ? 750 : 1500
+            let platinumReq = isPreStreamingLaunch ? 500 : 1000
+            let goldReq = isPreStreamingLaunch ? 200 : 400
+            
+            if playCount >= doubleDiamondReq { return .doubleDiamond }
+            if playCount >= diamondReq { return .diamond }
+            if playCount >= platinumReq { return .platinum }
+            if playCount >= goldReq { return .gold }
             return nil
         }
 }

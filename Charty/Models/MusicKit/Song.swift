@@ -18,10 +18,18 @@ struct SongItem: Identifiable, Codable {
     let artwork: Artwork?
     
     var award: Award? {
-        if playCount >= 500 { return .doubleDiamond }
-        if playCount >= 250 { return .diamond }
-        if playCount >= 100 { return .platinum }
-        if playCount >= 40 { return .gold }
-        return nil
-    }
+            let streamingDate = Calendar.current.date(from: DateComponents(year: 2015, month: 1, day: 1))!
+            let isPreStreamingLaunch = releaseDate != nil && releaseDate! < streamingDate
+            
+            let doubleDiamondReq = isPreStreamingLaunch ? 250 : 500
+            let diamondReq = isPreStreamingLaunch ? 125 : 250
+            let platinumReq = isPreStreamingLaunch ? 50 : 100
+            let goldReq = isPreStreamingLaunch ? 20 : 40
+            
+            if playCount >= doubleDiamondReq { return .doubleDiamond }
+            if playCount >= diamondReq { return .diamond }
+            if playCount >= platinumReq { return .platinum }
+            if playCount >= goldReq { return .gold }
+            return nil
+        }
 }
