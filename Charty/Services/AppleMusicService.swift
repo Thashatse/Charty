@@ -26,7 +26,7 @@ class AppleMusicService: ObservableObject {
     
     var isOutOfDate: Bool {
         guard let last = lastSynced else { return true }
-        return Date().timeIntervalSince(last) > outOfDateHours * 3600
+        return Date().timeIntervalSince(last) > syncIntervalHours * 3600
     }
     
     func loadOnLaunch() async {
