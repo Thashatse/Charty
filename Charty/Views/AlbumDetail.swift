@@ -109,7 +109,7 @@ struct AlbumDetail: View {
                                 Text("Released").font(.caption).foregroundStyle(.secondary)
                                 Spacer()
                                 if let releaseDate = album.releaseDate {
-                                    Text(releaseDate.formatted(date: .abbreviated, time: .shortened))
+                                    Text(releaseDate.formatted(date: .abbreviated, time: .omitted))
                                         .font(.subheadline.bold())
                                 }
                                 else{
