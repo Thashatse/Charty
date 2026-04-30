@@ -2,14 +2,16 @@ import SwiftUI
 import MusicKit
 
 struct ChartRow: View {
+    @EnvironmentObject private var service: AppleMusicService
+    
     let rank: Int
     let title: String
     let subtitle: String
     let stat: Int
     let award: Award?
     let artwork: Artwork?
+    var isNowPlaying: Bool = false
     
-    // Custom formatter to use a space as a separator
     private var formattedStat: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
@@ -56,6 +58,11 @@ struct ChartRow: View {
             }
             
             Spacer()
+            
+            if isNowPlaying {
+                AnimatedWaveform(isPlaying: service.isPlaying)
+                    .frame(width: 25, alignment: .leading)
+            }
             
             Text(formattedStat)
                 .font(.subheadline)

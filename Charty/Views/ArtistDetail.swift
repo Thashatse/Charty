@@ -3,6 +3,8 @@ import MusicKit
 import _MusicKit_SwiftUI
 
 struct ArtistDetail: View {
+    @EnvironmentObject private var service: AppleMusicService
+    
     let artist: ArtistItem
     let allSongs: [SongItem]
     let allAlbums: [AlbumItem]
@@ -165,7 +167,8 @@ struct ArtistDetail: View {
                                                 subtitle: song.albumTitle,
                                                 stat: song.playCount,
                                                 award: song.award,
-                                                artwork: song.artwork
+                                                artwork: song.artwork,
+                                                isNowPlaying: service.nowPlayingSong?.id == song.id,
                                             )
                                         }
                                         .buttonStyle(.plain)
@@ -257,7 +260,8 @@ struct ArtistDetail: View {
                                         (song.releaseDate != nil ? " • " + String(Calendar.current.component(.year, from: song.releaseDate!)) : ""),
                                         stat: song.playCount,
                                         award: song.award,
-                                        artwork: song.artwork
+                                        artwork: song.artwork,
+                                        isNowPlaying: service.nowPlayingSong?.id == song.id,
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -321,7 +325,8 @@ struct ArtistDetail: View {
                                                 subtitle: song.albumArtist + " — " + song.albumTitle,
                                                 stat: song.playCount,
                                                 award: song.award,
-                                                artwork: song.artwork
+                                                artwork: song.artwork,
+                                                isNowPlaying: service.nowPlayingSong?.id == song.id,
                                             )
                                             .padding(.horizontal)
                                             .padding(.vertical, 6)
@@ -344,5 +349,6 @@ struct ArtistDetail: View {
         }
         .ignoresSafeArea(edges: .top)
         .navigationBarTitleDisplayMode(.inline)
+        .nowPlayingToolbar()
     }
 }

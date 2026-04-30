@@ -1,6 +1,7 @@
 import Combine
 import MusicKit
 import Foundation
+import MediaPlayer
 
 @MainActor
 class AppleMusicService: ObservableObject {
@@ -10,6 +11,13 @@ class AppleMusicService: ObservableObject {
     @Published var isLoading = false
     @Published var isSyncing = false
     @Published var lastSynced: Date? = nil
+    @Published var nowPlayingSong: SongItem?
+    @Published var isPlaying: Bool = false
+    
+    private var pausedAt: Date? = nil
+    private let pillTimeoutMinutes: Double = 10
+    private var playerObservationTask: Task<Void, Never>?
+    private var hasPlayedThisSession: Bool = false
     
     private let lastSyncedKey = "charty_last_synced"
     private let songcacheKey = "charty_song_cache"
@@ -30,6 +38,8 @@ class AppleMusicService: ObservableObject {
     }
     
     func loadOnLaunch() async {
+        await beginObservingMusicPlayer()
+        
         let hasCache = !songs.isEmpty && !albums.isEmpty && !artists.isEmpty
         guard !hasCache else {
             if isOutOfDate {
@@ -192,6 +202,89 @@ class AppleMusicService: ObservableObject {
         } catch {
             print("Sync error: \(error)")
         }
+    }
+
+    func beginObservingMusicPlayer() async {
+        let status = await MusicAuthorization.request()
+        guard status == .authorized else { return }
+
+        let controller = MPMusicPlayerController.systemMusicPlayer
+
+        NotificationCenter.default.addObserver(
+            forName: .MPMusicPlayerControllerNowPlayingItemDidChange,
+            object: controller,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                self.updateNowPlaying(controller: controller)
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: .MPMusicPlayerControllerPlaybackStateDidChange,
+            object: controller,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                let playing = controller.playbackState == .playing
+                self.isPlaying = playing
+
+                if playing {
+                    // Resumed — cancel any pending timeout
+                    self.pausedAt = nil
+                    self.updateNowPlaying(controller: controller)
+                } else {
+                    // Paused — start timeout, don't touch nowPlayingSong yet
+                    self.pausedAt = Date()
+                    Task {
+                        try? await Task.sleep(nanoseconds: UInt64(self.pillTimeoutMinutes * 60 * 1_000_000_000))
+                        await MainActor.run {
+                            if let paused = self.pausedAt,
+                               Date().timeIntervalSince(paused) >= self.pillTimeoutMinutes * 60 {
+                                self.nowPlayingSong = nil
+                                self.pausedAt = nil
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        controller.beginGeneratingPlaybackNotifications()
+        updateNowPlaying(controller: controller)
+    }
+
+    @MainActor
+    private func updateNowPlaying(controller: MPMusicPlayerController) {
+        guard let item = controller.nowPlayingItem else {
+            if !hasPlayedThisSession {
+                nowPlayingSong = nil
+            }
+            return
+        }
+        
+        let matched = songs.first {
+            $0.title == item.title && $0.artist == item.artist
+        }
+        
+        isPlaying = controller.playbackState == .playing
+        
+        if isPlaying {
+            // Only show pill once something actually plays
+            hasPlayedThisSession = true
+            pausedAt = nil
+            if matched != nil {
+                nowPlayingSong = matched
+            }
+        } else if hasPlayedThisSession {
+            // Already played this session — keep showing pill (timeout handles hiding)
+            if matched != nil {
+                nowPlayingSong = matched
+            }
+        }
+        // else: never played this session, don't show pill
     }
     
     private func saveToCache() {

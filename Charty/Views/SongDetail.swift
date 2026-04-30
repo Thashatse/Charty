@@ -2,6 +2,8 @@ import SwiftUI
 import MusicKit
 
 struct SongDetail: View {
+    @EnvironmentObject private var service: AppleMusicService
+    
     let song: SongItem
     let allSongs: [SongItem]
     let allAlbums: [AlbumItem]
@@ -47,6 +49,22 @@ struct SongDetail: View {
                     // MARK: - Header
                     VStack(spacing: 12) {
                         VStack(spacing: 8) {
+                            
+                            // Now Playing indicator
+                            if service.nowPlayingSong?.id == song.id {
+                                HStack(spacing: 6) {
+                                    AnimatedWaveform(isPlaying: service.isPlaying)
+                                    Text("Now Playing")
+                                        .font(.caption.bold())
+                                        .foregroundStyle(service.isPlaying ? .blue : .secondary)
+                                        .textCase(.uppercase)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(service.isPlaying ? Color.blue.opacity(0.1) : Color.secondary.opacity(0.1))
+                                .clipShape(Capsule())
+                            }
+                            
                             Text(song.title)
                                 .font(.title.bold())
                                 .multilineTextAlignment(.center)
@@ -213,5 +231,6 @@ struct SongDetail: View {
             }
         }
         .ignoresSafeArea(edges: .top)
+        .nowPlayingToolbar(currentSongID: song.id)
     }
 }

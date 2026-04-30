@@ -2,6 +2,8 @@ import SwiftUI
 import _MusicKit_SwiftUI
 
 struct AlbumDetail: View {
+    @EnvironmentObject private var service: AppleMusicService
+    
     let album: AlbumItem
     let allSongs: [SongItem]
     let allAlbums: [AlbumItem]
@@ -89,7 +91,8 @@ struct AlbumDetail: View {
                                     subtitle: song.artist,
                                     stat: song.playCount,
                                     award: song.award,
-                                    artwork: nil
+                                    artwork: nil,
+                                    isNowPlaying: service.nowPlayingSong?.id == song.id,
                                 )
                                 .padding(.horizontal)
                                 .padding(.vertical, 8)
@@ -165,6 +168,7 @@ struct AlbumDetail: View {
         }
         .ignoresSafeArea(edges: .top)
         .navigationBarTitleDisplayMode(.inline)
+        .nowPlayingToolbar()
     }
     
     var albumDateFormatter: DateFormatter {

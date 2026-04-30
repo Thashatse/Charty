@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var service = AppleMusicService()
+    @EnvironmentObject private var service: AppleMusicService
     @State private var selectedChart = 0
     @State private var searchText = ""
     @State private var showingSyncSheet = false
@@ -39,7 +39,8 @@ struct ContentView: View {
                                                                             " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
                                             stat: result.item.playCount,
                                             award: result.item.award,
-                                            artwork: result.item.artwork
+                                            artwork: result.item.artwork,
+                                            isNowPlaying: service.nowPlayingSong?.id == result.item.id
                                         )
                                     }
                                     .buttonStyle(.plain) // Ensures the row doesn't look like a blue button
