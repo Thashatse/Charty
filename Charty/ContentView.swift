@@ -72,7 +72,7 @@ struct ContentView: View {
                                         artist: result.item,
                                         allSongs: service.songs,
                                         allAlbums: service.albums,
-                                        allArtists: service.artists
+                                        allArtists: service.artists,
                                     )) {
                                         ChartRow(
                                             rank: result.rank,
@@ -80,7 +80,7 @@ struct ContentView: View {
                                             subtitle: "",
                                             stat: result.item.playCount,
                                             award: result.item.award,
-                                            artwork: nil
+                                            artwork: result.item.artwork
                                         )
                                     }
                                     .buttonStyle(.plain)
