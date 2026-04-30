@@ -4,37 +4,64 @@ import _MusicKit_SwiftUI
 struct AlbumDetail: View {
     let album: AlbumItem
     let allSongs: [SongItem]
+    let allAlbums: [AlbumItem]
+    let allArtists: [ArtistItem]
     
     private var albumSongs: [SongItem] {
         allSongs.filter { $0.albumTitle == album.title && $0.albumArtist == album.artist }
             .sorted { $0.trackNumber < $1.trackNumber }
     }
     
+    private var artist: ArtistItem? {
+        allArtists.first { $0.name == album.artist }
+    }
+    
+    private var albumRank: Int? {
+        allAlbums.firstIndex(where: { $0.id == album.id }).map { $0 + 1 }
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 VStack(spacing: 12) {
-                    if let artwork = album.artwork {
-                        ArtworkImage(artwork, width: 250, height: 250)
-                            .cornerRadius(10)
-                            .shadow(radius: 6)
-                    } else {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 250, height: 250)
-                            .overlay(Image(systemName: "music.note").foregroundStyle(.secondary))
+                    GeometryReader { geometry in
+                        let sideLength = geometry.size.width
+                        
+                        if let artwork = album.artwork {
+                            ArtworkImage(artwork, width: sideLength, height: sideLength)
+                                .scaledToFill()
+                                .frame(width: sideLength, height: sideLength)
+                                .clipped()
+                        } else {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(width: sideLength, height: sideLength)
+                                .overlay(
+                                    Image(systemName: "music.note")
+                                        .font(.system(size: 80))
+                                        .foregroundStyle(.secondary)
+                                )
+                        }
                     }
+                    .aspectRatio(1, contentMode: .fit)
                 }
-                .padding(.top, 24)
                 .padding(.bottom, 20)
                 .frame(maxWidth: .infinity)
                 
                 LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
                     Section {
                         VStack(spacing: 4) {
-                            Text(String(Calendar.current.component(.year, from: album.releaseDate!)) + " • \(album.playCount) plays")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            
+                            
+                            HStack(spacing: 8) {
+                                if let rank = albumRank {
+                                    Text("No. \(rank) Overall")
+                                    Text("•")
+                                }
+                                Text("\(album.playCount) plays")
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                             
                             if let award = album.award {
                                 Text(award.displayName)
@@ -50,44 +77,83 @@ struct AlbumDetail: View {
                         .padding(.bottom, 20)
                         
                         ForEach(albumSongs) { song in
-                            ChartRow(
-                                rank: song.trackNumber,
-                                title: song.title,
-                                subtitle: song.artist,
-                                stat: song.playCount,
-                                award: song.award,
-                                artwork: nil
-                            )
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
+                            NavigationLink(destination: SongDetail(
+                                song: song,
+                                allSongs: allSongs,
+                                allAlbums: allAlbums,
+                                allArtists: allArtists
+                            )) {
+                                ChartRow(
+                                    rank: song.trackNumber,
+                                    title: song.title,
+                                    subtitle: song.artist,
+                                    stat: song.playCount,
+                                    award: song.award,
+                                    artwork: nil
+                                )
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                            }
+                            .buttonStyle(.plain)
                             
                             Divider().padding(.leading)
                         }
                         
-                        VStack(spacing: 12){
-                            if let releaseDate = album.releaseDate {
-                                Text("Released: \(releaseDate, formatter: albumDateFormatter)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                        // MARK: - Metadata
+                        VStack(spacing: 12) {
+                            Divider()
+                            HStack {
+                                Text("Released").font(.caption).foregroundStyle(.secondary)
+                                Spacer()
+                                if let releaseDate = album.releaseDate {
+                                    Text(releaseDate.formatted(date: .abbreviated, time: .shortened))
+                                        .font(.subheadline.bold())
+                                }
+                                else{
+                                    Text(String(Calendar.current.component(.year, from: album.releaseDate!)))
+                                        .font(.subheadline.bold())
+                                }
                             }
+                            .padding(.horizontal)
                             
-                            if let addedDate = album.libraryAddedDate {
-                                Text("Added: \(addedDate, formatter: albumDateFormatter)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                            HStack {
+                                Text("Added to Library").font(.caption).foregroundStyle(.secondary)
+                                Spacer()
+                                Text(album.libraryAddedDate?.formatted(date: .abbreviated, time: .shortened) ?? "Unknown")
+                                    .font(.subheadline.bold())
                             }
+                            .padding(.horizontal)
                         }
-                        .padding(.top, 20)
+                        .padding(.bottom, 40)
                         
                     } header: {
                         VStack(spacing: 2) {
                             Text(album.title)
                                 .font(.headline)
                                 .lineLimit(1)
-                            Text(album.artist)
-                                .font(.subheadline)
+                            
+                            if let artist {
+                                NavigationLink(destination: ArtistDetail(
+                                    artist: artist,
+                                    allSongs: allSongs,
+                                    allAlbums: allAlbums,
+                                    allArtists: allArtists
+                                )) {
+                                    Text(album.artist)
+                                        .font(.subheadline)
+                                        .foregroundStyle(Color.accentColor)
+                                        .lineLimit(1)
+                                }
+                            } else {
+                                Text(album.artist)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                            
+                            Text(String(Calendar.current.component(.year, from: album.releaseDate!)))
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -97,6 +163,7 @@ struct AlbumDetail: View {
                 }
             }
         }
+        .ignoresSafeArea(edges: .top)
         .navigationBarTitleDisplayMode(.inline)
     }
     

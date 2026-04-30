@@ -4,7 +4,8 @@ import MusicKit
 struct SongItem: Identifiable, Codable {
     let id: String
     let title: String
-    let artist: String
+    let artist: String // Primary Artist
+    let artistNames: [String] // All contributing artists
     let albumArtist: String
     let artistID: String?
     let albumTitle: String

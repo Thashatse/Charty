@@ -1,8 +1,11 @@
+import MusicKit
+
 struct ArtistItem: Identifiable, Codable {
     let id: String
     let name: String
     let playCount: Int
     let searchTarget: String
+    let artwork: Artwork?
     
     var award: Award? {
         if playCount >= 10000 { return .doubleDiamond }

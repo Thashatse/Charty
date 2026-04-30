@@ -26,20 +26,33 @@ struct ContentView: View {
                             if selectedChart == 0 {
                                 let filteredSongs = searchResults(for: service.songs)
                                 ForEach(filteredSongs, id: \.item.id) { result in
-                                    ChartRow(
-                                        rank: result.rank,
-                                        title: result.item.title,
-                                        subtitle: result.item.artist + (result.item.releaseDate != nil ?
-                                                                        " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
-                                        stat: result.item.playCount,
-                                        award: result.item.award,
-                                        artwork: result.item.artwork
-                                    )
+                                    NavigationLink(destination: SongDetail(
+                                        song: result.item,
+                                        allSongs: service.songs,
+                                        allAlbums: service.albums,
+                                        allArtists: service.artists
+                                    )) {
+                                        ChartRow(
+                                            rank: result.rank,
+                                            title: result.item.title,
+                                            subtitle: result.item.artist + (result.item.releaseDate != nil ?
+                                                                            " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
+                                            stat: result.item.playCount,
+                                            award: result.item.award,
+                                            artwork: result.item.artwork
+                                        )
+                                    }
+                                    .buttonStyle(.plain) // Ensures the row doesn't look like a blue button
                                 }
                             } else if selectedChart == 1 {
                                 let filteredAlbums = searchResults(for: service.albums)
                                 ForEach(filteredAlbums, id: \.item.id) { result in
-                                    NavigationLink(destination: AlbumDetail(album: result.item, allSongs: service.songs)) {
+                                    NavigationLink(destination: AlbumDetail(
+                                        album: result.item,
+                                        allSongs: service.songs,
+                                        allAlbums: service.albums,
+                                        allArtists: service.artists
+                                    )) {
                                         ChartRow(
                                             rank: result.rank,
                                             title: result.item.title,
@@ -55,14 +68,22 @@ struct ContentView: View {
                             } else {
                                 let filteredArtists = searchResults(for: service.artists)
                                 ForEach(filteredArtists, id: \.item.id) { result in
-                                    ChartRow(
-                                        rank: result.rank,
-                                        title: result.item.name,
-                                        subtitle: "",
-                                        stat: result.item.playCount,
-                                        award: result.item.award,
-                                        artwork: nil
-                                    )
+                                    NavigationLink(destination: ArtistDetail(
+                                        artist: result.item,
+                                        allSongs: service.songs,
+                                        allAlbums: service.albums,
+                                        allArtists: service.artists
+                                    )) {
+                                        ChartRow(
+                                            rank: result.rank,
+                                            title: result.item.name,
+                                            subtitle: "",
+                                            stat: result.item.playCount,
+                                            award: result.item.award,
+                                            artwork: nil
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             }
                         }
