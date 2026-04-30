@@ -51,10 +51,12 @@ struct ChartRow: View {
                     }
                 }
                 
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if subtitle.trimmingCharacters(in: .whitespacesAndNewlines) != "" {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
             
             Spacer()

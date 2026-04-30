@@ -88,7 +88,7 @@ struct AlbumDetail: View {
                                 ChartRow(
                                     rank: song.trackNumber,
                                     title: song.title,
-                                    subtitle: song.artist,
+                                    subtitle: song.artist == album.artist ? "" : song.artist,
                                     stat: song.playCount,
                                     award: song.award,
                                     artwork: nil,

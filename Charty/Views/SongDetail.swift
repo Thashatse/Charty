@@ -113,8 +113,19 @@ struct SongDetail: View {
                                                 .cornerRadius(4)
                                         }
                                         VStack(alignment: .leading) {
-                                            Text(album.title)
-                                                .font(.body.bold())
+                                            HStack(spacing: 6) {
+                                                Text(album.title)
+                                                    .font(.body.bold())
+                                                if let award = album.award {
+                                                    Text(award.rawValue)
+                                                        .font(.system(size: 12, weight: .black, design: .rounded))
+                                                        .padding(.horizontal, 6)
+                                                        .padding(.vertical, 2)
+                                                        .background(award.color.opacity(0.2))
+                                                        .foregroundStyle(award.color)
+                                                        .cornerRadius(4)
+                                                }
+                                            }
                                             Text(album.artist)
                                                 .font(.subheadline)
                                                 .foregroundStyle(.secondary)
@@ -155,8 +166,19 @@ struct SongDetail: View {
                                                     .overlay(Image(systemName: "person.fill").foregroundStyle(.secondary))
                                             }
                                             
-                                            Text(name)
-                                                .font(.body.bold())
+                                            HStack(spacing: 6) {
+                                                Text(name)
+                                                    .font(.body.bold())
+                                                if let award = artistItem.award {
+                                                    Text(award.rawValue)
+                                                        .font(.system(size: 12, weight: .black, design: .rounded))
+                                                        .padding(.horizontal, 6)
+                                                        .padding(.vertical, 2)
+                                                        .background(award.color.opacity(0.2))
+                                                        .foregroundStyle(award.color)
+                                                        .cornerRadius(4)
+                                                }
+                                            }
                                             
                                             Spacer()
                                             
