@@ -47,13 +47,10 @@ struct AlbumDetail: View {
                     }
                     .aspectRatio(1, contentMode: .fit)
                 }
-                .padding(.bottom, 20)
-                .frame(maxWidth: .infinity)
                 
                 LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
                     Section {
                         VStack(spacing: 4) {
-                            
                             
                             HStack(spacing: 8) {
                                 if let rank = albumRank {
@@ -133,8 +130,9 @@ struct AlbumDetail: View {
                     } header: {
                         VStack(spacing: 2) {
                             Text(album.title)
-                                .font(.headline)
-                                .lineLimit(1)
+                                .font(.title.bold())
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
                             
                             if let artist {
                                 NavigationLink(destination: ArtistDetail(

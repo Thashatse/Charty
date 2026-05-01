@@ -113,33 +113,8 @@ struct ArtistDetail: View {
                 
                 LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
                     
-                    // MARK: - Sticky header
+                    // MARK: - header
                     Section {
-                        VStack(spacing: 6) {
-                            HStack(spacing: 8) {
-                                if let rank = artistRank {
-                                    Text("No. \(rank) Overall")
-                                    Text("•")
-                                }
-                                Text("\(formattedPlays) plays")
-                            }
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            
-                            if let award = artist.award {
-                                Text(award.displayName)
-                                    .font(.caption.bold())
-                                    .textCase(.uppercase)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(award.color.opacity(0.2))
-                                    .foregroundStyle(award.color)
-                                    .cornerRadius(4)
-                            }
-                        }
-                        .padding(.top, 12)
-                        .padding(.bottom, 20)
-                        .frame(maxWidth: .infinity)
                         
                         // MARK: - Top Song, Album & Award Tally
                         if topSong != nil || topAlbum != nil {
@@ -338,11 +313,37 @@ struct ArtistDetail: View {
                                 .padding(.bottom, 40)
                         
                     } header: {
-                        Text(artist.name)
-                            .font(.title2.bold())
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color(UIColor.systemBackground))
+                        VStack(spacing: 2) {
+                            Text(artist.name)
+                                    .font(.title.bold())
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            
+                            HStack(spacing: 8) {
+                                if let rank = artistRank {
+                                    Text("No. \(rank) Overall")
+                                    Text("•")
+                                }
+                                Text("\(formattedPlays) plays")
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            
+                            if let award = artist.award {
+                                Text(award.displayName)
+                                    .font(.caption.bold())
+                                    .textCase(.uppercase)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(award.color.opacity(0.2))
+                                    .foregroundStyle(award.color)
+                                    .cornerRadius(4)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(10)
                     }
                 }
             }

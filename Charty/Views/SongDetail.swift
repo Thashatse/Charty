@@ -47,54 +47,55 @@ struct SongDetail: View {
                 
                 VStack(spacing: 24) {
                     // MARK: - Header
-                    VStack(spacing: 12) {
-                        VStack(spacing: 8) {
-                            
-                            // Now Playing indicator
-                            if service.nowPlayingSong?.id == song.id {
-                                HStack(spacing: 6) {
-                                    AnimatedWaveform(isPlaying: service.isPlaying)
-                                    Text("Now Playing")
-                                        .font(.caption.bold())
-                                        .foregroundStyle(service.isPlaying ? .blue : .secondary)
-                                        .textCase(.uppercase)
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(service.isPlaying ? Color.blue.opacity(0.1) : Color.secondary.opacity(0.1))
-                                .clipShape(Capsule())
-                            }
-                            
-                            Text(song.title)
-                                .font(.title.bold())
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                            
-                            VStack(spacing: 6) {
-                                HStack(spacing: 8) {
-                                    if let rank = songRank {
-                                        Text("No. \(rank) Overall")
-                                        Text("•")
-                                    }
-                                    Text("\(formattedPlays) plays")
-                                }
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            }
-                            
-                            if let award = song.award {
-                                Text(award.displayName)
+                    VStack(spacing: 2) {
+                        
+                        // Now Playing indicator
+                        if service.nowPlayingSong?.id == song.id {
+                            HStack(spacing: 6) {
+                                AnimatedWaveform(isPlaying: service.isPlaying)
+                                Text("Now Playing")
                                     .font(.caption.bold())
+                                    .foregroundStyle(service.isPlaying ? .blue : .secondary)
                                     .textCase(.uppercase)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(award.color.opacity(0.2))
-                                    .foregroundStyle(award.color)
-                                    .cornerRadius(6)
                             }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(service.isPlaying ? Color.blue.opacity(0.1) : Color.secondary.opacity(0.1))
+                            .clipShape(Capsule())
+                        }
+                        
+                        Text(song.title)
+                            .font(.title.bold())
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        VStack(spacing: 6) {
+                            HStack(spacing: 8) {
+                                if let rank = songRank {
+                                    Text("No. \(rank) Overall")
+                                    Text("•")
+                                }
+                                Text("\(formattedPlays) plays")
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        }
+                        
+                        if let award = song.award {
+                            Text(award.displayName)
+                                .font(.caption.bold())
+                                .textCase(.uppercase)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(award.color.opacity(0.2))
+                                .foregroundStyle(award.color)
+                                .cornerRadius(6)
                         }
                     }
-                    .padding(.top, 24)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(Color(UIColor.systemBackground))
+                    .cornerRadius(10)
                     
                     // MARK: - Album and Artist
                     VStack(alignment: .leading, spacing: 16) {
@@ -210,9 +211,6 @@ struct SongDetail: View {
                         }
                     }
                     .padding(.horizontal)
-                    .onAppear {
-                        print("👥 song.artistNames array: \(song.artistNames)")
-                    }
                     
                     // MARK: - Metadata
                     VStack(spacing: 12) {
