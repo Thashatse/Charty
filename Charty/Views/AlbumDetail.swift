@@ -108,12 +108,13 @@ struct AlbumDetail: View {
                             HStack {
                                 Text("Released").font(.caption).foregroundStyle(.secondary)
                                 Spacer()
+                                
                                 if let releaseDate = album.releaseDate {
                                     Text(releaseDate.formatted(date: .abbreviated, time: .omitted))
                                         .font(.subheadline.bold())
                                 }
                                 else{
-                                    Text(String(Calendar.current.component(.year, from: album.releaseDate!)))
+                                    Text(album.releaseDate.map { String(Calendar.current.component(.year, from: $0)) } ?? "Unknown")
                                         .font(.subheadline.bold())
                                 }
                             }
@@ -154,9 +155,11 @@ struct AlbumDetail: View {
                                     .lineLimit(1)
                             }
                             
-                            Text(String(Calendar.current.component(.year, from: album.releaseDate!)))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            if let releaseDate = album.releaseDate {
+                                Text(String(Calendar.current.component(.year, from: releaseDate)))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
