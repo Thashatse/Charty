@@ -28,7 +28,6 @@ struct ChartyApp: App {
             NavigationStack {
                 ZStack(alignment: .bottom) {
                     ContentView()
-                        .environmentObject(appleMusicService)
                     
                     if let currentSong = appleMusicService.nowPlayingSong {
                         NowPlaying(
@@ -39,7 +38,7 @@ struct ChartyApp: App {
                             allArtists: appleMusicService.artists
                         )
                         .padding(.horizontal)
-                        .padding(.bottom, 6)
+                        .padding(.bottom, 60)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                         .animation(.spring(), value: currentSong.id)
                     }

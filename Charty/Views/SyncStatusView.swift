@@ -43,15 +43,6 @@ struct SyncStatusView: View {
                     }
                 }
                 
-                Section {
-                    actionButton(
-                        title: service.isSyncing ? "Syncing…" : "Sync Library Now",
-                        disabled: service.isSyncing
-                    ) {
-                        Task { await service.syncLibrary() }
-                    }
-                }
-                
                 // MARK: - Chart Build
                 
                 Section("Charts") {
@@ -79,12 +70,15 @@ struct SyncStatusView: View {
                     }
                 }
                 
+                
                 Section {
                     actionButton(
-                        title: chartService.isBuilding ? "Building…" : "Build Charts Now",
-                        disabled: chartService.isBuilding || service.isSyncing
+                        title: service.isSyncing ? "Syncing Library…" : (chartService.isBuilding ? "Building Charts…" : "Sync & Build Now"),
+                        disabled: (service.isSyncing || chartService.isBuilding)
                     ) {
                         Task {
+                            await service.syncLibrary()
+                            
                             await chartService.build(
                                 songs: service.songs,
                                 albums: service.albums,
@@ -146,16 +140,5 @@ struct SyncStatusView: View {
             }
             Text(text).foregroundStyle(color)
         }
-    }
-    
-    private func actionButton(title: String, disabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack {
-                Spacer()
-                Text(title).fontWeight(.semibold)
-                Spacer()
-            }
-        }
-        .disabled(disabled)
     }
 }

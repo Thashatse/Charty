@@ -3,144 +3,45 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var musicService: AppleMusicService
     @EnvironmentObject private var chartService: ChartService
-    @State private var selectedChart = 0
-    @State private var searchText = ""
+    @State private var activeTab = 0
     @State private var showingSyncSheet = false
+    @State private var searchText = ""
+    
+    private let period = PeriodHelper.getCurrentPeriod()
     
     var body: some View {
-        NavigationStack {
-            VStack {
-                Picker("Chart Type", selection: $selectedChart) {
-                    Text("Songs").tag(0)
-                    Text("Albums").tag(1)
-                    Text("Artists").tag(2)
-                }
-                .pickerStyle(.segmented)
-                .padding()
-                
-                Group {
-                    if musicService.isLoading {
-                        ProgressView("Loading your charts...")
-                            .frame(maxHeight: .infinity)
-                    } else {
-                        List {
-                            if selectedChart == 0 {
-                                let filteredSongs = searchResults(for: musicService.songs)
-                                ForEach(filteredSongs, id: \.item.id) { result in
-                                    NavigationLink(destination: SongDetail(
-                                        song: result.item,
-                                        allSongs: musicService.songs,
-                                        allAlbums: musicService.albums,
-                                        allArtists: musicService.artists
-                                    )) {
-                                        ChartRow(
-                                            rank: result.rank,
-                                            title: result.item.title,
-                                            subtitle: result.item.artist + (result.item.releaseDate != nil ?
-                                                                            " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
-                                            stat: result.item.playCount,
-                                            award: result.item.award,
-                                            artwork: result.item.artwork,
-                                            isNowPlaying: musicService.nowPlayingSong?.id == result.item.id
-                                        )
-                                    }
-                                    .buttonStyle(.plain) // Ensures the row doesn't look like a blue button
-                                }
-                            } else if selectedChart == 1 {
-                                let filteredAlbums = searchResults(for: musicService.albums)
-                                ForEach(filteredAlbums, id: \.item.id) { result in
-                                    NavigationLink(destination: AlbumDetail(
-                                        album: result.item,
-                                        allSongs: musicService.songs,
-                                        allAlbums: musicService.albums,
-                                        allArtists: musicService.artists
-                                    )) {
-                                        ChartRow(
-                                            rank: result.rank,
-                                            title: result.item.title,
-                                            subtitle: result.item.artist + (result.item.releaseDate != nil ?
-                                                                            " • " + String(Calendar.current.component(.year, from: result.item.releaseDate!)) : ""),
-                                            stat: result.item.playCount,
-                                            award: result.item.award,
-                                            artwork: result.item.artwork
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            } else {
-                                let filteredArtists = searchResults(for: musicService.artists)
-                                ForEach(filteredArtists, id: \.item.id) { result in
-                                    NavigationLink(destination: ArtistDetail(
-                                        artist: result.item,
-                                        allSongs: musicService.songs,
-                                        allAlbums: musicService.albums,
-                                        allArtists: musicService.artists,
-                                    )) {
-                                        ChartRow(
-                                            rank: result.rank,
-                                            title: result.item.name,
-                                            subtitle: "",
-                                            stat: result.item.playCount,
-                                            award: result.item.award,
-                                            artwork: result.item.artwork
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Charty")
-            .searchable(text: $searchText, prompt: "Search...")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingSyncSheet = true
-                    } label: {
-                        Image(systemName: "arrow.triangle.2.circlepath.circle")
-                            .symbolEffect(.rotate, isActive: (musicService.isSyncing || chartService.isBuilding))
-                            .foregroundStyle((musicService.isOutOfDate || chartService.isDue) ? .orange : .accentColor)
-                    }
-                }
-            }
-            .sheet(isPresented: $showingSyncSheet) {
-                SyncStatusView(service: musicService, chartService: chartService)
-            }
-            .task {
-                await musicService.loadOnLaunch()
-            }
-        }
-    }
-    
-    /// This helper takes a full list, attaches the rank (index + 1),
-    /// and then filters it based on search text.
-    private func searchResults<T>(for items: [T]) -> [(rank: Int, item: T)] {
-        // Attach the rank first based on the original sorted order
-        let rankedItems = items.enumerated().map { (index: $0, item: $1) }
-        
-        // If search is empty, return the standard limited list
-        if searchText.isEmpty {
-            let limit = (selectedChart == 0) ? 500 : 100
-            return rankedItems.prefix(limit).map { ($0.index + 1, $0.item) }
-        }
-        
-        // Otherwise, search through the ENTIRE list
-        return rankedItems.filter { ranked in
-            let searchTarget: String
-            if let song = ranked.item as? SongItem {
-                searchTarget = "\(song.title) \(song.artist) \(song.albumTitle)"
-            } else if let album = ranked.item as? AlbumItem {
-                searchTarget = "\(album.title) \(album.artist) \(album.searchTarget)"
-            } else if let artist = ranked.item as? ArtistItem {
-                searchTarget = "\(artist.name) \(artist.searchTarget)"
-            } else {
-                searchTarget = ""
-            }
+        TabView(selection: $activeTab) {
+            AllTimeView(searchText: searchText)
+                .tabItem { Label("Lifetime", systemImage: "trophy") }
+                .tag(0)
             
-            return searchTarget.localizedCaseInsensitiveContains(searchText)
-        }.map { ($0.index + 1, $0.item) }
+            BuildingChartView(searchText: searchText)
+                .tabItem { Label("Building", systemImage: "chart.line.uptrend.xyaxis") }
+                .tag(1)
+        }
+        .searchable(text: $searchText, placement: .automatic, prompt: "Search...")
+        .navigationTitle("Charts")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(activeTab == 0 ? "Lifetime Charts" : "Building • " + period.displayName)
+                    .font(.headline)
+                    .fontWeight(.bold)
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showingSyncSheet = true } label: {
+                    Image(systemName: "arrow.triangle.2.circlepath.circle")
+                        .symbolEffect(.rotate, isActive: (musicService.isSyncing || chartService.isBuilding))
+                        .foregroundStyle((musicService.isOutOfDate || chartService.isDue) ? .orange : .accentColor)
+                }
+            }
+        }
+        .sheet(isPresented: $showingSyncSheet) {
+            SyncStatusView(service: musicService, chartService: chartService)
+        }
+        .task {
+            await musicService.loadOnLaunch()
+        }
     }
 }
+
