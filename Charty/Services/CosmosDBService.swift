@@ -1,17 +1,41 @@
 import Foundation
 import CryptoKit
+import Combine
 
-class CosmosDBService {
-    private let accountName: String
-    private let masterKey: String
-    private let databaseId: String
-    private let containerId: String
+@MainActor
+class CosmosDBService : ObservableObject {
+    @Published var accountName: String = ""
+    @Published var masterKey: String = ""
+    @Published var databaseId: String = ""
+    @Published var containerId: String = ""
     
-    init(accountName: String, masterKey: String, databaseId: String, containerId: String) {
-        self.accountName = accountName
-        self.masterKey = masterKey
-        self.databaseId = databaseId
-        self.containerId = containerId
+    private let configKey = "cosmos_config"
+    
+    init() {
+        loadConfiguration()
+    }
+    
+    var isConfigured: Bool {
+        !accountName.isEmpty && !masterKey.isEmpty && !databaseId.isEmpty && !containerId.isEmpty
+    }
+    
+    func saveConfiguration() {
+        let dict = [
+            "accountName": accountName,
+            "masterKey": masterKey,
+            "databaseId": databaseId,
+            "containerId": containerId
+        ]
+        UserDefaults.standard.set(dict, forKey: configKey)
+    }
+    
+    private func loadConfiguration() {
+        if let dict = UserDefaults.standard.dictionary(forKey: configKey) {
+            accountName = dict["accountName"] as? String ?? ""
+            masterKey = dict["masterKey"] as? String ?? ""
+            databaseId = dict["databaseId"] as? String ?? ""
+            containerId = dict["containerId"] as? String ?? ""
+        }
     }
     
     func getDocument<T: Decodable>(id: String, partitionKey: String) async throws -> T {
@@ -54,20 +78,30 @@ class CosmosDBService {
         
         request.httpBody = try JSONEncoder().encode(document)
         
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
         if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+            let body = String(data: data, encoding: .utf8) ?? "unreadable"
+            print("Cosmos error body: \(body)")
             throw NSError(domain: "CosmosError", code: httpResponse.statusCode)
         }
     }
 
     private func generateAuthToken(verb: String, resourceType: String, resourceId: String, date: String) -> String {
         let stringToSign = "\(verb.lowercased())\n\(resourceType.lowercased())\n\(resourceId)\n\(date.lowercased())\n\n"
-        let key = Data(base64Encoded: masterKey)!
-        let signature = HMAC<SHA256>.authenticationCode(for: Data(stringToSign.utf8), using: SymmetricKey(data: key))
-        let signatureBase64 = Data(signature).base64EncodedString()
         
+        guard let keyData = Data(base64Encoded: masterKey) else {
+            fatalError("Invalid master key base64")
+        }
+        let signature = HMAC<SHA256>.authenticationCode(
+            for: Data(stringToSign.utf8),
+            using: SymmetricKey(data: keyData)
+        )
+        let signatureBase64 = Data(signature).base64EncodedString()
         let authString = "type=master&ver=1.0&sig=\(signatureBase64)"
-        return authString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "+&=")
+        let encoded = authString.addingPercentEncoding(withAllowedCharacters: allowed) ?? authString
+        return encoded
     }
 
     private func HTTPDateString() -> String {

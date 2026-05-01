@@ -2,60 +2,123 @@ import SwiftUI
 
 struct SyncStatusView: View {
     @ObservedObject var service: AppleMusicService
+    @ObservedObject var chartService: ChartService
+    @StateObject private var cosmos = CosmosDBService()
     @Environment(\.dismiss) var dismiss
     
     private var lastSyncedText: String {
-        guard let date = service.lastSynced else { return "Never" }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        return formatter.localizedString(for: date, relativeTo: Date())
+        formatted(date: service.lastSynced)
+    }
+    
+    private var lastBuiltText: String {
+        formatted(date: chartService.lastBuilt)
+    }
+    
+    private func formatted(date: Date?) -> String {
+        guard let date else { return "Never" }
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .full
+        return f.localizedString(for: date, relativeTo: Date())
     }
     
     var body: some View {
         NavigationStack {
             List {
-                Section("Sync Status") {
-                    HStack {
-                        Text("Last synced")
-                        Spacer()
-                        Text(lastSyncedText)
-                            .foregroundStyle(.secondary)
-                    }
+                
+                // MARK: - Library Sync
+                
+                Section("Library Sync") {
+                    row(label: "Last synced", value: lastSyncedText)
                     
                     HStack {
                         Text("Status")
                         Spacer()
                         if service.isSyncing {
-                            HStack(spacing: 6) {
-                                ProgressView().scaleEffect(0.8)
-                                Text("Syncing...")
-                                    .foregroundStyle(.secondary)
-                            }
+                            statusBadge("Syncing...", color: .blue, spinning: true)
                         } else if service.isOutOfDate {
-                            Text("Out of date")
-                                .foregroundStyle(.orange)
+                            statusBadge("Out of date", color: .orange)
                         } else {
-                            Text("Up to date")
-                                .foregroundStyle(.green)
+                            statusBadge("Up to date", color: .green)
                         }
                     }
                 }
                 
                 Section {
-                    Button {
+                    actionButton(
+                        title: service.isSyncing ? "Syncing…" : "Sync Library Now",
+                        disabled: service.isSyncing
+                    ) {
                         Task { await service.syncLibrary() }
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Text(service.isSyncing ? "Syncing..." : "Sync Now")
-                                .fontWeight(.semibold)
-                            Spacer()
+                    }
+                }
+                
+                // MARK: - Chart Build
+                
+                Section("Charts") {
+                    row(label: "Last built", value: lastBuiltText)
+                    
+                    HStack {
+                        Text("Status")
+                        Spacer()
+                        if chartService.isBuilding {
+                            statusBadge("Building...", color: .blue, spinning: true)
+                        } else if let err = chartService.buildError {
+                            statusBadge("Error", color: .red)
+                                .help(err)
+                        } else if chartService.isDue {
+                            statusBadge("Due for rebuild", color: .orange)
+                        } else {
+                            statusBadge("Up to date", color: .green)
                         }
                     }
-                    .disabled(service.isSyncing)
+                    
+                    if let err = chartService.buildError {
+                        Text(err)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+                
+                Section {
+                    actionButton(
+                        title: chartService.isBuilding ? "Building…" : "Build Charts Now",
+                        disabled: chartService.isBuilding || service.isSyncing
+                    ) {
+                        Task {
+                            await chartService.build(
+                                songs: service.songs,
+                                albums: service.albums,
+                                artists: service.artists
+                            )
+                        }
+                    }
+                }
+                
+                // MARK: - Cloud Configuration
+                Section(header: Text("Cloud Configuration")) {
+                    TextField("Account Name", text: $cosmos.accountName)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                    SecureField("Master Key", text: $cosmos.masterKey)
+                    TextField("Database", text: $cosmos.databaseId)
+                    TextField("Container", text: $cosmos.containerId)
+                }
+                
+                Section {
+                    actionButton(
+                        title: "Update Configuration",
+                        disabled: chartService.isBuilding || service.isSyncing
+                    ) {
+                        Task {
+                            cosmos.saveConfiguration()
+                            // Haptic feedback
+                            let generator = UINotificationFeedbackGenerator()
+                            generator.notificationOccurred(.success)
+                        }
+                    }
                 }
             }
-            .navigationTitle("Library")
+            .navigationTitle("Status")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -63,5 +126,36 @@ struct SyncStatusView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Helpers
+    
+    private func row(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            Text(value).foregroundStyle(.secondary)
+        }
+    }
+    
+    @ViewBuilder
+    private func statusBadge(_ text: String, color: Color, spinning: Bool = false) -> some View {
+        HStack(spacing: 6) {
+            if spinning {
+                ProgressView().scaleEffect(0.8)
+            }
+            Text(text).foregroundStyle(color)
+        }
+    }
+    
+    private func actionButton(title: String, disabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Spacer()
+                Text(title).fontWeight(.semibold)
+                Spacer()
+            }
+        }
+        .disabled(disabled)
     }
 }

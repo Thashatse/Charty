@@ -24,7 +24,11 @@ class AppleMusicService: ObservableObject {
     private let albumCacheKey = "charty_albums_cache"
     private let artistCacheKey = "charty_artists_cache"
     
-    init() {
+    private let chartService: ChartService
+    
+    init(chartService: ChartService) {
+        self.chartService = chartService
+        
         loadFromCache()
         lastSynced = UserDefaults.standard.object(forKey: lastSyncedKey) as? Date
     }
@@ -202,14 +206,16 @@ class AppleMusicService: ObservableObject {
         } catch {
             print("Sync error: \(error)")
         }
+        
+        await chartService.buildIfNeeded(songs: self.songs, albums: self.albums, artists: self.artists)
     }
-
+    
     func beginObservingMusicPlayer() async {
         let status = await MusicAuthorization.request()
         guard status == .authorized else { return }
-
+        
         let controller = MPMusicPlayerController.systemMusicPlayer
-
+        
         NotificationCenter.default.addObserver(
             forName: .MPMusicPlayerControllerNowPlayingItemDidChange,
             object: controller,
@@ -220,7 +226,7 @@ class AppleMusicService: ObservableObject {
                 self.updateNowPlaying(controller: controller)
             }
         }
-
+        
         NotificationCenter.default.addObserver(
             forName: .MPMusicPlayerControllerPlaybackStateDidChange,
             object: controller,
@@ -230,7 +236,7 @@ class AppleMusicService: ObservableObject {
             Task { @MainActor in
                 let playing = controller.playbackState == .playing
                 self.isPlaying = playing
-
+                
                 if playing {
                     // Resumed — cancel any pending timeout
                     self.pausedAt = nil
@@ -251,11 +257,11 @@ class AppleMusicService: ObservableObject {
                 }
             }
         }
-
+        
         controller.beginGeneratingPlaybackNotifications()
         updateNowPlaying(controller: controller)
     }
-
+    
     @MainActor
     private func updateNowPlaying(controller: MPMusicPlayerController) {
         guard let item = controller.nowPlayingItem else {
@@ -287,30 +293,38 @@ class AppleMusicService: ObservableObject {
         // else: never played this session, don't show pill
     }
     
+    //MARK: - cache
+    
     private func saveToCache() {
         let encoder = JSONEncoder()
-        if let data = try? encoder.encode(songs) {
-            UserDefaults.standard.set(data, forKey: songcacheKey)
+        
+        if let songsData = try? encoder.encode(songs) {
+            writeToFile(data: songsData, key: songcacheKey)
         }
-        if let data = try? encoder.encode(albums) {
-            UserDefaults.standard.set(data, forKey: albumCacheKey)
+        
+        if let albumsData = try? encoder.encode(albums) {
+            writeToFile(data: albumsData, key: albumCacheKey)
         }
-        if let data = try? encoder.encode(artists) {
-            UserDefaults.standard.set(data, forKey: artistCacheKey)
+        
+        if let artistsData = try? encoder.encode(artists) {
+            writeToFile(data: artistsData, key: artistCacheKey)
         }
     }
     
     private func loadFromCache() {
         let decoder = JSONDecoder()
-        if let data = UserDefaults.standard.data(forKey: songcacheKey),
+        
+        if let data = readFromFile(key: songcacheKey),
            let cached = try? decoder.decode([SongItem].self, from: data) {
             songs = cached
         }
-        if let data = UserDefaults.standard.data(forKey: albumCacheKey),
+        
+        if let data = readFromFile(key: albumCacheKey),
            let cached = try? decoder.decode([AlbumItem].self, from: data) {
             albums = cached
         }
-        if let data = UserDefaults.standard.data(forKey: artistCacheKey),
+        
+        if let data = readFromFile(key: artistCacheKey),
            let cached = try? decoder.decode([ArtistItem].self, from: data) {
             artists = cached
         }

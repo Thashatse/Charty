@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject private var service: AppleMusicService
+    @EnvironmentObject private var musicService: AppleMusicService
+    @EnvironmentObject private var chartService: ChartService
     @State private var selectedChart = 0
     @State private var searchText = ""
     @State private var showingSyncSheet = false
@@ -18,19 +19,19 @@ struct ContentView: View {
                 .padding()
                 
                 Group {
-                    if service.isLoading {
+                    if musicService.isLoading {
                         ProgressView("Loading your charts...")
                             .frame(maxHeight: .infinity)
                     } else {
                         List {
                             if selectedChart == 0 {
-                                let filteredSongs = searchResults(for: service.songs)
+                                let filteredSongs = searchResults(for: musicService.songs)
                                 ForEach(filteredSongs, id: \.item.id) { result in
                                     NavigationLink(destination: SongDetail(
                                         song: result.item,
-                                        allSongs: service.songs,
-                                        allAlbums: service.albums,
-                                        allArtists: service.artists
+                                        allSongs: musicService.songs,
+                                        allAlbums: musicService.albums,
+                                        allArtists: musicService.artists
                                     )) {
                                         ChartRow(
                                             rank: result.rank,
@@ -40,19 +41,19 @@ struct ContentView: View {
                                             stat: result.item.playCount,
                                             award: result.item.award,
                                             artwork: result.item.artwork,
-                                            isNowPlaying: service.nowPlayingSong?.id == result.item.id
+                                            isNowPlaying: musicService.nowPlayingSong?.id == result.item.id
                                         )
                                     }
                                     .buttonStyle(.plain) // Ensures the row doesn't look like a blue button
                                 }
                             } else if selectedChart == 1 {
-                                let filteredAlbums = searchResults(for: service.albums)
+                                let filteredAlbums = searchResults(for: musicService.albums)
                                 ForEach(filteredAlbums, id: \.item.id) { result in
                                     NavigationLink(destination: AlbumDetail(
                                         album: result.item,
-                                        allSongs: service.songs,
-                                        allAlbums: service.albums,
-                                        allArtists: service.artists
+                                        allSongs: musicService.songs,
+                                        allAlbums: musicService.albums,
+                                        allArtists: musicService.artists
                                     )) {
                                         ChartRow(
                                             rank: result.rank,
@@ -67,13 +68,13 @@ struct ContentView: View {
                                     .buttonStyle(.plain)
                                 }
                             } else {
-                                let filteredArtists = searchResults(for: service.artists)
+                                let filteredArtists = searchResults(for: musicService.artists)
                                 ForEach(filteredArtists, id: \.item.id) { result in
                                     NavigationLink(destination: ArtistDetail(
                                         artist: result.item,
-                                        allSongs: service.songs,
-                                        allAlbums: service.albums,
-                                        allArtists: service.artists,
+                                        allSongs: musicService.songs,
+                                        allAlbums: musicService.albums,
+                                        allArtists: musicService.artists,
                                     )) {
                                         ChartRow(
                                             rank: result.rank,
@@ -100,16 +101,16 @@ struct ContentView: View {
                         showingSyncSheet = true
                     } label: {
                         Image(systemName: "arrow.triangle.2.circlepath.circle")
-                            .symbolEffect(.rotate, isActive: service.isSyncing)
-                            .foregroundStyle(service.isOutOfDate ? .orange : .accentColor)
+                            .symbolEffect(.rotate, isActive: (musicService.isSyncing || chartService.isBuilding))
+                            .foregroundStyle((musicService.isOutOfDate || chartService.isDue) ? .orange : .accentColor)
                     }
                 }
             }
             .sheet(isPresented: $showingSyncSheet) {
-                SyncStatusView(service: service)
+                SyncStatusView(service: musicService, chartService: chartService)
             }
             .task {
-                await service.loadOnLaunch()
+                await musicService.loadOnLaunch()
             }
         }
     }

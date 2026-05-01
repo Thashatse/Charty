@@ -9,22 +9,34 @@ import SwiftUI
 
 @main
 struct ChartyApp: App {
-    @StateObject private var service = AppleMusicService()
-
+    @StateObject private var cosmosService: CosmosDBService
+    @StateObject private var chartService: ChartService
+    @StateObject private var appleMusicService: AppleMusicService
+    
+    init() {
+        let cosmos = CosmosDBService()
+        let charts = ChartService(cosmos: cosmos)
+        let music = AppleMusicService(chartService: charts)
+        
+        _cosmosService = StateObject(wrappedValue: cosmos)
+        _chartService = StateObject(wrappedValue: charts)
+        _appleMusicService = StateObject(wrappedValue: music)
+    }
+    
     var body: some Scene {
         WindowGroup {
             NavigationStack {
                 ZStack(alignment: .bottom) {
                     ContentView()
-                        .environmentObject(service)
+                        .environmentObject(appleMusicService)
                     
-                    if let currentSong = service.nowPlayingSong {
+                    if let currentSong = appleMusicService.nowPlayingSong {
                         NowPlaying(
                             song: currentSong,
-                            isPlaying: service.isPlaying,
-                            allSongs: service.songs,
-                            allAlbums: service.albums,
-                            allArtists: service.artists
+                            isPlaying: appleMusicService.isPlaying,
+                            allSongs: appleMusicService.songs,
+                            allAlbums: appleMusicService.albums,
+                            allArtists: appleMusicService.artists
                         )
                         .padding(.horizontal)
                         .padding(.bottom, 6)
@@ -33,7 +45,9 @@ struct ChartyApp: App {
                     }
                 }
             }
-            .environmentObject(service) 
+            .environmentObject(cosmosService)
+            .environmentObject(chartService)
+            .environmentObject(appleMusicService)
         }
     }
 }
